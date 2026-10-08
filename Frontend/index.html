@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SoundWave | Pastel Music Streaming & Artist Studio</title>
+  <meta name="description" content="Discover soothing music, curated pastel albums, and creator artist studio powered by Node.js, Express, MongoDB, and ImageKit.">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%239d7dc9'><path d='M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z'/></svg>">
+</head>
+<body>
+  <!-- Toast Notification Stack -->
+  <div id="toast-container"></div>
+
+  <div id="app-container">
+    <!-- Sidebar Navigation (Opaque Pastel Biscuit) -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <div class="logo-icon-wrapper">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="brand-title">SoundWave</h1>
+          <div class="brand-subtitle">Pastel Studio</div>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section-title">Discovery</div>
+        <a class="nav-item active" id="nav-discover" onclick="switchView('discover')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
+          <span>Discover Feed</span>
+        </a>
+        <a class="nav-item" id="nav-albums" onclick="switchView('albums')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><circle cx="12" cy="12" r="2"/></svg>
+          <span>Curated Albums</span>
+        </a>
+
+        <div class="nav-section-title">Your Studio</div>
+        <a class="nav-item" id="nav-studio" onclick="switchView('studio')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          <span>Artist Studio</span>
+          <span class="nav-badge artist-badge" id="studio-role-pill">RBAC</span>
+        </a>
+
+        <div class="nav-section-title">Queue</div>
+        <a class="nav-item" id="nav-queue" onclick="toggleQueueDrawer()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          <span>Playing Queue</span>
+          <span class="nav-badge" id="queue-count-badge">0</span>
+        </a>
+      </nav>
+
+      <!-- Sidebar User Profile & RBAC Switcher Card -->
+      <div class="sidebar-user-card" id="sidebar-user-card">
+        <div class="user-card-header">
+          <div class="user-card-avatar" id="user-avatar-initials">G</div>
+          <div class="user-card-info">
+            <div class="user-card-name" id="user-display-name">Guest Explorer</div>
+            <div class="user-card-role role-listener" id="user-display-role">Listener</div>
+          </div>
+        </div>
+        <button class="switch-role-btn" id="btn-quick-role-toggle" onclick="toggleUserRole()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 16l-4 4-4-4"/><path d="M4 8l4-4 4 4"/><path d="M16 20V4"/><path d="M8 4v16"/></svg>
+          <span id="role-toggle-text">Switch to Artist</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Viewport -->
+    <main class="main-viewport">
+      <!-- Top Sticky Header -->
+      <header class="top-header">
+        <div class="search-box-container">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" class="search-input" id="search-input" placeholder="Search pastel tracks, artists, genres..." oninput="handleSearch(this.value)">
+        </div>
+
+        <div class="header-actions">
+          <!-- Dark / Light Mode Switcher -->
+          <button class="theme-toggle-btn" id="theme-toggle-btn" onclick="toggleTheme()" title="Toggle Dark / Light Mode">
+            <svg id="theme-toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+          </button>
+
+          <!-- Quick Demo Account Shortcut for Testing -->
+          <select class="demo-account-select" id="demo-account-select" onchange="handleDemoLogin(this.value)">
+            <option value="">⚡ Quick Demo Login...</option>
+            <option value="test">Listener Mode (User: test)</option>
+            <option value="test_3">Artist Studio Mode (User: test_3)</option>
+          </select>
+
+          <div id="auth-buttons-wrapper">
+            <button class="btn-outline" onclick="openAuthModal('login')">Sign In</button>
+            <button class="btn-primary" onclick="openAuthModal('register')">Register</button>
+          </div>
+
+          <div id="logged-user-actions" style="display: none; align-items: center; gap: 10px;">
+            <button class="btn-outline" onclick="handleLogout()">Sign Out</button>
+          </div>
+        </div>
+      </header>
+
+      <!-- View 1: Discover Feed -->
+      <section class="view-content" id="view-discover">
+        <!-- Hero Spotlight Banner -->
+        <div class="hero-banner" id="hero-banner">
+          <div class="hero-content">
+            <span class="hero-tag">🌸 Featured Pastel Spotlight</span>
+            <h2 class="hero-title" id="hero-album-title">Pastel Dreams & Soft Echoes</h2>
+            <p class="hero-desc" id="hero-album-desc">A soothing pastel compilation of calming acoustic rhythms, soft melodic synths, and daydream beats curated by platform artists.</p>
+            <div class="hero-actions">
+              <button class="btn-hero-play" onclick="playHeroFeatured()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                <span>Play Album</span>
+              </button>
+              <button class="btn-outline" onclick="exploreHeroAlbum()">Explore Tracks</button>
+            </div>
+          </div>
+          <div class="hero-vinyl-wrapper">
+            <img src="/assets/covers/pastel_dreamscape.jpg" class="hero-cover-art" id="hero-cover-img" alt="Featured Album">
+            <div class="hero-vinyl-disc">
+              <div class="hero-vinyl-center"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="filter-bar">
+          <button class="filter-pill active" onclick="filterGenre('all', this)">All Sounds</button>
+          <button class="filter-pill" onclick="filterGenre('Pastel Lo-Fi', this)">Pastel Lo-Fi</button>
+          <button class="filter-pill" onclick="filterGenre('Acoustic Chill', this)">Acoustic Chill</button>
+          <button class="filter-pill" onclick="filterGenre('Pastel Ambient', this)">Pastel Ambient</button>
+          <button class="filter-pill" onclick="filterGenre('Synthwave', this)">Synthwave</button>
+        </div>
+
+        <!-- Trending Tracks Section -->
+        <div>
+          <div class="section-header">
+            <h3 class="section-title">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--pastel-lavender)"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              Trending Tracks
+            </h3>
+            <span class="section-link" onclick="playAllVisibleTracks()">Play All</span>
+          </div>
+          <div class="tracks-grid" id="tracks-grid-container">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <!-- Curated Albums Section -->
+        <div>
+          <div class="section-header">
+            <h3 class="section-title">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--pastel-peach)"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="2"/></svg>
+              Curated Albums
+            </h3>
+            <span class="section-link" onclick="switchView('albums')">View All</span>
+          </div>
+          <div class="albums-grid" id="albums-home-container">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </section>
+
+      <!-- View 2: Curated Albums Exploration -->
+      <section class="view-content" id="view-albums" style="display: none;">
+        <div class="section-header">
+          <div>
+            <h2 class="section-title" style="font-size: 2rem;">Album Catalog Exploration</h2>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 4px;">Dynamic album releases crafted by artists with Mongoose relational population</p>
+          </div>
+        </div>
+        <div class="albums-grid" id="albums-full-container">
+          <!-- Dynamically populated -->
+        </div>
+      </section>
+
+      <!-- View 3: Artist Studio (RBAC Dashboard) -->
+      <section class="view-content" id="view-studio" style="display: none;">
+        <div class="studio-container">
+          <!-- Artist Studio Header Banner -->
+          <div class="studio-banner">
+            <div>
+              <h2 class="studio-banner-title">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--pastel-lavender)"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                Artist Studio Workflow
+              </h2>
+              <p class="studio-banner-desc">
+                Role-Based Access Control (RBAC) workspace. Upload audio streams directly to ImageKit cloud CDN and publish curated multi-track albums to the global catalog.
+              </p>
+            </div>
+            <div style="display: flex; gap: 10px;">
+              <span class="hero-tag" style="background-color: #fff; color: var(--pastel-mint); border-color: var(--pastel-mint-border);">
+                ImageKit Cloud Connected
+              </span>
+            </div>
+          </div>
+
+          <!-- RBAC Listener Warning (Shown if user is logged in as 'user' listener) -->
+          <div class="rbac-listener-notice" id="studio-listener-guard" style="display: none;">
+            <div class="rbac-icon-wrap">
+              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </div>
+            <h3 style="font-size: 1.3rem; font-weight: 700;">Artist Studio Access Restricted</h3>
+            <p style="color: var(--text-secondary); font-size: 0.92rem; line-height: 1.5;">
+              You are currently authenticated as a standard <strong>Listener (Role: User)</strong>. Only verified <strong>Artists</strong> can upload tracks via Multer to ImageKit and curate albums.
+            </p>
+            <div style="display: flex; gap: 12px; margin-top: 8px;">
+              <button class="rbac-upgrade-btn" onclick="toggleUserRole()">⚡ Instant Upgrade to Artist Role</button>
+              <button class="btn-outline" onclick="handleDemoLogin('test_3')">Sign in as Artist test_3</button>
+            </div>
+          </div>
+
+          <!-- Main Studio Dashboard (Shown if user is 'artist') -->
+          <div id="studio-artist-workspace">
+            <!-- Studio Tab Controls -->
+            <div class="studio-tabs">
+              <button class="studio-tab-btn active" id="tab-btn-upload" onclick="switchStudioTab('upload')">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Upload Track (Multer + ImageKit)
+              </button>
+              <button class="studio-tab-btn" id="tab-btn-album" onclick="switchStudioTab('album')">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><path d="M12 8v8"/><path d="M8 12h8"/></svg>
+                Curate & Publish Album
+              </button>
+              <button class="studio-tab-btn" id="tab-btn-manage" onclick="switchStudioTab('manage')">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 18l6-6-6-6"/></svg>
+                Manage My Catalog
+              </button>
+            </div>
+
+            <!-- Tab 1: Upload Music Track -->
+            <div class="studio-form-card" id="studio-pane-upload">
+              <form id="track-upload-form" onsubmit="handleTrackUpload(event)">
+                <div class="form-grid">
+                  <div class="form-group full-width">
+                    <label class="form-label">Audio File (MP3, WAV, AAC, OGG)</label>
+                    <div class="file-dropzone" id="audio-dropzone" onclick="document.getElementById('audio-file-input').click()">
+                      <div class="file-dropzone-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                      </div>
+                      <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary);">Drag & drop audio track or click to browse</div>
+                      <div style="color: var(--text-muted); font-size: 0.8rem;">Processed by Multer memory storage and delivered via ImageKit CDN</div>
+                      <div class="file-chosen-preview" id="audio-file-name" style="display: none;"></div>
+                      <input type="file" id="audio-file-input" name="music" accept="audio/*" style="display: none;" onchange="handleFileSelect(this)">
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label" for="track-title-input">Track Title *</label>
+                    <input type="text" id="track-title-input" class="form-input" placeholder="e.g. Blossom Reverie" required>
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label" for="track-genre-select">Genre</label>
+                    <select id="track-genre-select" class="form-select">
+                      <option value="Pastel Lo-Fi">Pastel Lo-Fi</option>
+                      <option value="Acoustic Chill">Acoustic Chill</option>
+                      <option value="Pastel Ambient">Pastel Ambient</option>
+                      <option value="Synthwave">Synthwave</option>
+                      <option value="Electronic">Electronic</option>
+                    </select>
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label" for="track-duration-input">Duration (mm:ss)</label>
+                    <input type="text" id="track-duration-input" class="form-input" placeholder="03:30" value="03:30">
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label">Cover Artwork</label>
+                    <div class="cover-picker-grid" id="track-cover-picker">
+                      <div class="cover-option-card selected" onclick="selectPresetCover('track', '/assets/covers/pastel_dreamscape.jpg', this)">
+                        <img src="/assets/covers/pastel_dreamscape.jpg" alt="Pastel Dreams">
+                        <span class="cover-option-badge">Pastel Dreams</span>
+                      </div>
+                      <div class="cover-option-card" onclick="selectPresetCover('track', '/assets/covers/sakura_pastel.jpg', this)">
+                        <img src="/assets/covers/sakura_pastel.jpg" alt="Sakura">
+                        <span class="cover-option-badge">Sakura</span>
+                      </div>
+                      <div class="cover-option-card" onclick="selectPresetCover('track', '/assets/covers/cloud_nine.jpg', this)">
+                        <img src="/assets/covers/cloud_nine.jpg" alt="Cloud Nine">
+                        <span class="cover-option-badge">Cloud Nine</span>
+                      </div>
+                    </div>
+                    <input type="hidden" id="track-cover-value" value="/assets/covers/pastel_dreamscape.jpg">
+                  </div>
+
+                  <div class="form-group full-width" style="margin-top: 10px;">
+                    <button type="submit" class="btn-primary" id="btn-submit-upload" style="padding: 12px 24px; font-size: 1rem; width: fit-content;">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+                      <span>Upload to ImageKit & Publish</span>
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+
+            <!-- Tab 2: Curate Album -->
+            <div class="studio-form-card" id="studio-pane-album" style="display: none;">
+              <form id="album-create-form" onsubmit="handleAlbumCreate(event)">
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label class="form-label" for="album-title-input">Album Title *</label>
+                    <input type="text" id="album-title-input" class="form-input" placeholder="e.g. Sakura Breeze EP" required>
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label" for="album-genre-select">Primary Genre</label>
+                    <select id="album-genre-select" class="form-select">
+                      <option value="Pastel Lo-Fi">Pastel Lo-Fi</option>
+                      <option value="Acoustic Chill">Acoustic Chill</option>
+                      <option value="Pastel Ambient">Pastel Ambient</option>
+                      <option value="Synthwave">Synthwave</option>
+                    </select>
+                  </div>
+
+                  <div class="form-group full-width">
+                    <label class="form-label" for="album-desc-input">Album Liner Notes & Description</label>
+                    <textarea id="album-desc-input" class="form-textarea" rows="2" placeholder="Tell listeners the soothing concept and theme behind this pastel album..."></textarea>
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label">Album Artwork</label>
+                    <div class="cover-picker-grid" id="album-cover-picker">
+                      <div class="cover-option-card selected" onclick="selectPresetCover('album', '/assets/covers/pastel_dreamscape.jpg', this)">
+                        <img src="/assets/covers/pastel_dreamscape.jpg" alt="Pastel Dreams">
+                        <span class="cover-option-badge">Pastel Dreams</span>
+                      </div>
+                      <div class="cover-option-card" onclick="selectPresetCover('album', '/assets/covers/sakura_pastel.jpg', this)">
+                        <img src="/assets/covers/sakura_pastel.jpg" alt="Sakura">
+                        <span class="cover-option-badge">Sakura</span>
+                      </div>
+                      <div class="cover-option-card" onclick="selectPresetCover('album', '/assets/covers/cloud_nine.jpg', this)">
+                        <img src="/assets/covers/cloud_nine.jpg" alt="Cloud Nine">
+                        <span class="cover-option-badge">Cloud Nine</span>
+                      </div>
+                    </div>
+                    <input type="hidden" id="album-cover-value" value="/assets/covers/pastel_dreamscape.jpg">
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label">Select Tracks to Include</label>
+                    <div class="track-selection-list" id="album-tracks-checklist">
+                      <!-- Populated dynamically with artist's tracks -->
+                    </div>
+                  </div>
+
+                  <div class="form-group full-width" style="margin-top: 10px;">
+                    <button type="submit" class="btn-primary" id="btn-submit-album" style="padding: 12px 24px; font-size: 1rem; width: fit-content;">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>
+                      <span>Publish Curated Album</span>
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+
+            <!-- Tab 3: My Published Catalog -->
+            <div class="studio-form-card" id="studio-pane-manage" style="display: none;">
+              <h3 style="font-family: var(--font-heading); font-size: 1.2rem; color: var(--text-primary);">Your Published Tracks</h3>
+              <div id="artist-tracks-manager-list" style="display: flex; flex-direction: column; gap: 10px;">
+                <!-- Dynamically populated -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Persistent Bottom Audio Player Dock (Solid Opaque White / Cream) -->
+  <footer class="bottom-player-bar">
+    <!-- Left: Now Playing Metadata -->
+    <div class="player-left-info">
+      <div class="player-thumb-wrap" id="player-thumb-wrap">
+        <img src="/assets/covers/pastel_dreamscape.jpg" class="player-thumb-img" id="player-cover-art" alt="Cover">
+      </div>
+      <div class="player-text-wrap">
+        <div class="player-track-title" id="player-track-title">Select a track to stream</div>
+        <div class="player-track-artist" id="player-track-artist">SoundWave Platform</div>
+      </div>
+      <button class="btn-icon-subtle" id="player-fav-btn" onclick="toggleFavorite(this)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      </button>
+    </div>
+
+    <!-- Center: Playback Controls & Timeline -->
+    <div class="player-center-controls">
+      <div class="player-buttons-row">
+        <button class="btn-player-action" id="btn-shuffle" title="Shuffle" onclick="toggleShuffle()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
+        </button>
+        <button class="btn-player-action" id="btn-prev" title="Previous Track" onclick="playPreviousTrack()">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5"/></svg>
+        </button>
+        <button class="btn-play-pause-main" id="btn-play-pause" title="Play / Pause" onclick="togglePlayPause()">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" id="play-pause-icon"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        </button>
+        <button class="btn-player-action" id="btn-next" title="Next Track" onclick="playNextTrack()">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
+        </button>
+        <button class="btn-player-action" id="btn-repeat" title="Repeat" onclick="toggleRepeat()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+        </button>
+      </div>
+
+      <div class="player-timeline-row">
+        <span class="time-text" id="time-current">00:00</span>
+        <input type="range" class="scrub-slider" id="scrub-bar" min="0" max="100" value="0" oninput="handleSeek(this.value)">
+        <span class="time-text right" id="time-duration">00:00</span>
+      </div>
+    </div>
+
+    <!-- Right: Visualizer EQ, Volume, Queue Toggle -->
+    <div class="player-right-dock">
+      <!-- Animated Pastel Equalizer Bars -->
+      <div class="audio-visualizer-bars" id="eq-visualizer">
+        <div class="eq-bar"></div>
+        <div class="eq-bar"></div>
+        <div class="eq-bar"></div>
+        <div class="eq-bar"></div>
+        <div class="eq-bar"></div>
+      </div>
+
+      <!-- Volume Controls -->
+      <div class="volume-container">
+        <button class="btn-icon-subtle" id="btn-mute" onclick="toggleMute()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" id="volume-icon"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+        </button>
+        <input type="range" class="volume-slider" id="volume-slider" min="0" max="1" step="0.01" value="0.8" oninput="handleVolumeChange(this.value)">
+      </div>
+
+      <!-- Queue Drawer Toggle -->
+      <button class="btn-icon-subtle" title="Queue" onclick="toggleQueueDrawer()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      </button>
+    </div>
+  </footer>
+
+  <!-- Album Detail View Modal -->
+  <div class="modal-backdrop" id="album-detail-modal">
+    <div class="modal-window album-detail-modal">
+      <div class="modal-header">
+        <div class="modal-title">Album Exploration</div>
+        <button class="btn-modal-close" onclick="closeAlbumModal()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="album-detail-hero">
+        <img src="/assets/covers/pastel_dreamscape.jpg" class="album-detail-cover" id="modal-album-cover" alt="Cover">
+        <div class="album-detail-info">
+          <span class="hero-tag" id="modal-album-genre">Pastel Lo-Fi</span>
+          <h2 class="album-detail-title" id="modal-album-title">Album Title</h2>
+          <div style="color: var(--text-secondary); font-size: 0.9rem; font-weight: 600;" id="modal-album-artist">Curated by Artist</div>
+          <p style="color: var(--text-muted); font-size: 0.85rem;" id="modal-album-desc">Liner notes</p>
+          <div style="margin-top: 10px;">
+            <button class="btn-hero-play" id="btn-play-entire-album" onclick="playModalAlbum()">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              <span>Play Entire Album</span>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-body" style="max-height: 350px; overflow-y: auto;">
+        <table class="album-detail-tracklist-table">
+          <thead>
+            <tr>
+              <th style="width: 40px;">#</th>
+              <th>Title</th>
+              <th>Artist</th>
+              <th>Length</th>
+              <th style="text-align: right;">Action</th>
+            </tr>
+          </thead>
+          <tbody id="modal-album-tracklist-tbody">
+            <!-- Populated dynamically -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Authentication Modal (Sign In / Register with Role Selector) -->
+  <div class="modal-backdrop" id="auth-modal">
+    <div class="modal-window">
+      <div class="modal-header">
+        <div class="modal-title" id="auth-modal-title">Sign In to SoundWave</div>
+        <button class="btn-modal-close" onclick="closeAuthModal()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <!-- Quick Demo Login Helpers -->
+        <div class="quick-login-row">
+          <div class="quick-login-label">⚡ 1-Click Test Credentials</div>
+          <div class="quick-login-buttons">
+            <button type="button" class="btn-quick-demo" onclick="fillAndLogin('test', 'test')">Listener (test)</button>
+            <button type="button" class="btn-quick-demo" onclick="fillAndLogin('test_3', 'test')">Artist (test_3)</button>
+          </div>
+        </div>
+
+        <form id="auth-form" onsubmit="handleAuthSubmit(event)">
+          <div style="display: flex; flex-direction: column; gap: 14px;">
+            <div class="form-group">
+              <label class="form-label" for="auth-username">Username</label>
+              <input type="text" id="auth-username" class="form-input" placeholder="Your username" required>
+            </div>
+
+            <div class="form-group" id="auth-email-group" style="display: none;">
+              <label class="form-label" for="auth-email">Email Address</label>
+              <input type="email" id="auth-email" class="form-input" placeholder="your.email@example.com">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="auth-password">Password</label>
+              <input type="password" id="auth-password" class="form-input" placeholder="••••••••" required>
+            </div>
+
+            <!-- Role Selection (Only shown during Register) -->
+            <div class="form-group" id="auth-role-group" style="display: none;">
+              <label class="form-label">Select Account Role (RBAC)</label>
+              <div class="role-selection-group">
+                <div class="role-radio-card selected" id="role-choice-user" onclick="selectRole('user')">
+                  <div class="role-radio-title">🎧 Listener</div>
+                  <div class="role-radio-desc">Discover & stream audio catalog</div>
+                </div>
+                <div class="role-radio-card" id="role-choice-artist" onclick="selectRole('artist')">
+                  <div class="role-radio-title">🎨 Artist Studio</div>
+                  <div class="role-radio-desc">Upload tracks & curate albums</div>
+                </div>
+              </div>
+              <input type="hidden" id="auth-role-input" value="user">
+            </div>
+
+            <button type="submit" class="btn-primary" id="btn-auth-submit" style="width: 100%; justify-content: center; padding: 12px; margin-top: 6px;">
+              Sign In
+            </button>
+          </div>
+        </form>
+
+        <div style="text-align: center; font-size: 0.85rem; color: var(--text-secondary);">
+          <span id="auth-toggle-prompt">Don't have an account?</span>
+          <a href="#" style="color: var(--pastel-lavender); font-weight: 700; margin-left: 6px;" id="auth-toggle-link" onclick="toggleAuthMode(event)">Create Account</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Up-Next Queue Drawer Modal -->
+  <div class="modal-backdrop" id="queue-drawer-modal">
+    <div class="modal-window" style="max-width: 440px;">
+      <div class="modal-header">
+        <div class="modal-title">Up Next in Queue</div>
+        <button class="btn-modal-close" onclick="toggleQueueDrawer()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body" style="max-height: 420px; overflow-y: auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <span style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Playlist Tracks</span>
+          <span class="section-link" onclick="clearQueue()">Clear Queue</span>
+        </div>
+        <div id="queue-tracks-list" style="display: flex; flex-direction: column; gap: 8px;">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+</body>
+</html>
